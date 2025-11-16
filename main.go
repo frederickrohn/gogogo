@@ -28,7 +28,31 @@ func usersHandler(w http.ResponseWriter, r* http.Request){
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(users)
 		case http.MethodPost:
-			http.Error(w, "POST /users is not implemented", http.StatusNotImplemented)
+			// decode json
+			var input struct { //look for json key name and assign to Name
+				Name string `json:"name"`
+			}
+			if err:= json.NewDecoder(r.Body).Decode(&input); err != nil{
+				http.Error(w, "invalid json", http.StatusBadRequest)
+				return
+			}
+			if input.Name == "" {
+				http.Error(w, "name is required", http.StatusBadRequest)
+				return
+			}
+
+			//create a new user
+			newID:= len(users) + 1
+			newUser:=user.User{
+				ID: newID,
+				Name: input.Name,
+			}
+			users = append(users, newUser) //append to users slice
+
+			//return the new user with 201
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated) //this returns the 201 status code
+			json.NewEncoder(w).Encode(newUser)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
