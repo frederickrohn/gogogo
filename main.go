@@ -3,15 +3,22 @@ package main
 import (
 	"fmt"
 	"github.com/frederickrohn/gogogo/user"
+	"net/http"
 )
 
-func main() {
-
-	u:= user.User{
+func helloHandler(w http.ResponseWriter, r* http.Request){
+	u:=user.User{
 		ID: 1,
 		Name: "Fred",
 	}
-	greeting:= user.Greet(u)
+	greeting:=user.Greet(u)
+	fmt.Fprintln(w, greeting)
+}
 
-	fmt.Println(greeting)
+
+
+func main() {
+	http.HandleFunc("/hello", helloHandler)
+	fmt.Println("Server is running on port 8080...")
+	http.ListenAndServe(":8080", nil)
 }
