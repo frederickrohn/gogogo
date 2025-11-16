@@ -1,24 +1,17 @@
 package main
 
-import "fmt"
-
-type User struct {
-	ID int
-	Name string
-}
-
-func greet(u User) string{
-	str := "Hi! I'm " + u.Name
-	return str
-}
+import (
+	"fmt"
+	"github.com/frederickrohn/gogogo/user"
+)
 
 func main() {
 
-	user:= User{
+	u:= user.User{
 		ID: 1,
 		Name: "Fred",
 	}
-	greeting:= greet(user)
+	greeting:= user.Greet(u)
 
 	fmt.Println(greeting)
 }
