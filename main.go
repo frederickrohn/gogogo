@@ -41,12 +41,27 @@ func statsHandler(w http.ResponseWriter, r* http.Request){
 		return
 	}
 
-	syncMu.Lock()
-	total:= fetchTotalUsers()
-	active:= fetchActiveUsers()
-	syncMu.Unlock()
+	var total, active, score int
 
-	score:= fetchScore()
+	var wg = sync.WaitGroup{}
+	wg.Add(2) //wait on 2 goroutines
+
+	go func(){ //first goroutine
+		defer wg.Done()
+		syncMu.Lock()
+		total = fetchTotalUsers()
+		active = fetchActiveUsers()
+		syncMu.Unlock()
+	}()
+
+	go func(){ //second goroutine
+		defer wg.Done()
+		syncMu.Lock()
+		score = fetchScore()
+		syncMu.Unlock()
+	}()
+
+	wg.Wait() //wait for both goroutines to finish
 	stats:= Stats{
 		TotalUsers: total,
 		ActiveUsers: active,
