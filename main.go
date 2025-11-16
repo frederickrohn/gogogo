@@ -22,8 +22,17 @@ func helloHandler(w http.ResponseWriter, r* http.Request){
 }
 
 func usersHandler(w http.ResponseWriter, r* http.Request){
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+
+	switch r.Method{
+		case http.MethodGet:
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(users)
+		case http.MethodPost:
+			http.Error(w, "POST /users is not implemented", http.StatusNotImplemented)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+	
 }
 
 
