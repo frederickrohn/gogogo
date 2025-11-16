@@ -8,6 +8,12 @@ import (
 	"sync"
 )
 
+type Stats struct {
+    TotalUsers    int `json:"total_users"`
+    ActiveUsers   int `json:"active_users"`
+    ExternalScore int `json:"external_score"`
+}
+
 var (
 	users = []user.User{
 		{ID: 1, Name: "Fred"},
@@ -17,13 +23,38 @@ var (
 	syncMu = sync.Mutex{}
 )
 
-func helloHandler(w http.ResponseWriter, r* http.Request){
-	u:=user.User{
-		ID: 1,
-		Name: "Fred",
+func fetchTotalUsers() int{
+	return len(users)
+}
+
+func fetchActiveUsers() int{ // just a mock function
+	return len(users) / 2
+}
+
+func fetchScore() int{ //another mock function
+	return 10
+}
+
+func statsHandler(w http.ResponseWriter, r* http.Request){
+	if r.Method != http.MethodGet{
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
-	greeting:=user.Greet(u)
-	fmt.Fprintln(w, greeting)
+
+	syncMu.Lock()
+	total:= fetchTotalUsers()
+	active:= fetchActiveUsers()
+	syncMu.Unlock()
+
+	score:= fetchScore()
+	stats:= Stats{
+		TotalUsers: total,
+		ActiveUsers: active,
+		ExternalScore: score,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
 }
 
 func usersHandler(w http.ResponseWriter, r* http.Request){
@@ -78,7 +109,7 @@ func usersHandler(w http.ResponseWriter, r* http.Request){
 
 
 func main() {
-	http.HandleFunc("/hello", helloHandler)
+	http.HandleFunc("/stats", statsHandler)
 	http.HandleFunc("/users", usersHandler)
 	fmt.Println("Server is running on port 8080...")
 	http.ListenAndServe(":8080", nil)
