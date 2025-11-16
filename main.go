@@ -5,12 +5,17 @@ import (
 	"github.com/frederickrohn/gogogo/user"
 	"net/http"
 	"encoding/json"
+	"sync"
 )
 
-var users = []user.User{
-    {ID: 1, Name: "Fred"},
-    {ID: 2, Name: "Alice"},
-}
+var (
+	users = []user.User{
+		{ID: 1, Name: "Fred"},
+		{ID: 2, Name: "Alice"},
+	}
+
+	syncMu = sync.Mutex{}
+)
 
 func helloHandler(w http.ResponseWriter, r* http.Request){
 	u:=user.User{
@@ -25,8 +30,16 @@ func usersHandler(w http.ResponseWriter, r* http.Request){
 
 	switch r.Method{
 		case http.MethodGet:
+
+			//lock the mutex and create copy  - faster than doing everything inside the lock
+			syncMu.Lock()
+			currentUsers:= make([]user.User, len(users))
+			copy(currentUsers, users)
+			syncMu.Unlock()
+
+			//return the copy of the users slice
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(users)
+			json.NewEncoder(w).Encode(currentUsers)
 		case http.MethodPost:
 			// decode json
 			var input struct { //look for json key name and assign to Name
@@ -42,12 +55,15 @@ func usersHandler(w http.ResponseWriter, r* http.Request){
 			}
 
 			//create a new user
+
+			syncMu.Lock() //lock when we are changing/reading the users slice
 			newID:= len(users) + 1
 			newUser:=user.User{
 				ID: newID,
 				Name: input.Name,
 			}
 			users = append(users, newUser) //append to users slice
+			syncMu.Unlock()
 
 			//return the new user with 201
 			w.Header().Set("Content-Type", "application/json")
